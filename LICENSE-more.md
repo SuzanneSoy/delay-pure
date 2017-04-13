@@ -1,4 +1,4 @@
-anaphoric
+delay-pure
 Copyright (c) 2016-2017 Georges Dupéron
 
 
