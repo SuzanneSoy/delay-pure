@@ -46,6 +46,14 @@
  @racket[struct] accessors and predicates, and @racket[struct] constructors for
  immutable structures.
 
+ Note that the expressions can refer to variables mutated with @racket[set!]
+ by other code. Placing the expression in a lambda function and calling that
+ function twice may therefore yield different results, if other code mutates
+ some free variables between the two invocations. In order to produce a pure
+ thunk which caches its inputs (thereby shielding them from any mutation of the
+ external environment), use @racket[pure-thunk/stateless] and
+ @racket[pure-thunk/stateful] instead.
+
  The first form, @racket[pure/stateless], checks that once fully-expanded, the
  @racket[expression] does not contain uses of @racket[set!]. Since the free
  variables can never refer to stateful functions, this means that any function

@@ -17,8 +17,8 @@
  [make-promise/pure/stateful (∀ (a) (→ (→ a) (Promise a)))]
  [make-promise/pure/stateless (∀ (a) (→ (→ a) (Promise a)))])
 
-(define-syntax (delay/pure/stateful/unsafe stx)
-  (make-delayer stx #'make-promise/pure/stateful '()))
+(define-for-syntax (stx-e x)
+  (if (syntax? x) (syntax-e x) x))
 
 (define-syntax (delay/pure/stateless/unsafe stx)
   (make-delayer stx #'make-promise/pure/stateless '()))
@@ -27,10 +27,12 @@
   (syntax-parser
     [(_ e)
      (syntax/top-loc this-syntax
-       (delay/pure/stateful/unsafe (pure/stateful e)))]))
+       (make-promise/pure/stateful
+        (pure-thunk/stateful (λ () e))))]))
 
 (define-syntax delay/pure/stateless
   (syntax-parser
     [(_ e)
      (syntax/top-loc this-syntax
-       (delay/pure/stateless/unsafe (pure/stateless e)))]))
+       (make-promise/pure/stateless
+        (pure-thunk/stateless (λ () e))))]))

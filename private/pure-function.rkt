@@ -9,6 +9,8 @@
          (prefix-in te: type-expander)
          phc-toolkit
          (for-syntax (rename-in racket/base [... …])
+                     racket/match
+                     syntax/modcollapse
                      racket/list
                      racket/syntax
                      racket/contract
@@ -62,13 +64,16 @@
 (define-for-syntax built-in-pure-functions-free-id-set
   (immutable-free-id-set
    (syntax->list
-    #'(+ - * / modulo add1 sub1;; …
+    #'(+ - * / modulo add1 sub1 =;; …
+         eq? eqv? equal? ;; TODO: equal? can still cause problems if the
+         ;; struct's prop:equal+hash is effectful.
          error
          format values
          promise/pure/maybe-stateful? promise/pure/stateless?
          ;; Does not have a type yet:
          ;; list*
-         cons car cdr list list? pair? length reverse ;; …
+         null cons car cdr list list? pair? null? length reverse ;; …
+         void
          vector-ref vector-immutable vector-length vector->list vector? ;; …
          hash-ref hash->list hash? ;; …
          set-member? set->list set? ;; …
@@ -80,7 +85,13 @@
          ))))
 
 (define-for-syntax (built-in-pure-function? id)
-  (free-id-set-member? built-in-pure-functions-free-id-set id))
+  (or (free-id-set-member? built-in-pure-functions-free-id-set id)
+      (match (identifier-binding id)
+        [(list (app collapse-module-path-index '(lib "racket/private/kw.rkt"))
+               'make-optional-keyword-procedure
+               _ _ _ _ _)
+         #t]
+        [_ #f])))
 
 (define-syntax (def-built-in-set stx)
   (syntax-case stx ()
@@ -299,18 +310,18 @@
 
     (define/with-syntax varref (datum->syntax self `(#%variable-reference)))
 
-    ;; Prevent the mutation of the cached copy, by making it a macro which
-    ;; rejects uses as the target of a set! .
     #`(let ()
         marked-as-unsafe ...
         (let ([free free] …)
+          ;; Prevent the mutation of the cached copy, by making it a macro which
+          ;; rejects uses as the target of a set! .
           (let-syntax ([free (make-no-set!-transformer #'free)] …)
             ;; The input should always be stateless
             (assert free (check-immutable/error varref 'stateless))
             …
             ;; The result must be pure too, otherwise it could (I
             ;; suppose) cause problems with occurrence typing, if a
-            ;; copy if mutated but not the other, and TR still
+            ;; copy is mutated but not the other, and TR still
             ;; expects them to be equal?
             ;; By construction, it should be immutable, except for functions
             ;; (which can hold internal state), but TR won't assume that when
@@ -368,8 +379,9 @@
      (quasisyntax/top-loc this-syntax
        (define name
          (declared-wrapper
-          (lam #,@(when-attr tvars #'(fa tvars)) args maybe-result-type …
-               (pure/? (let () body …))))))]))
+          (pure/?
+           (lam #,@(when-attr tvars #'(fa tvars)) args maybe-result-type …
+                (let () body …))))))]))
 
 (define-syntax define-pure/stateful (define-pure/impl 'stateful))
 (define-syntax define-pure/stateless (define-pure/impl 'stateless))
