@@ -85,13 +85,21 @@
          ))))
 
 (define-for-syntax (built-in-pure-function? id)
+  (define (empty-mpi? mpi)
+    (equal? (call-with-values (λ () (module-path-index-split mpi))
+                              list)
+            '(#f #f)))
   (or (free-id-set-member? built-in-pure-functions-free-id-set id)
-      (match (identifier-binding id)
-        [(list (app collapse-module-path-index '(lib "racket/private/kw.rkt"))
-               'make-optional-keyword-procedure
-               _ _ _ _ _)
-         #t]
-        [_ #f])))
+      (let ([ib (identifier-binding id)])
+        (match ib
+          ;; circumvent https://github.com/racket/racket/issues/1697
+          [(list* (? empty-mpi?) _) #f]
+          [(list* (app collapse-module-path-index
+                       '(lib "racket/private/kw.rkt"))
+                  'make-optional-keyword-procedure
+                  _)
+           #t]
+          [_ #f]))))
 
 (define-syntax (def-built-in-set stx)
   (syntax-case stx ()
