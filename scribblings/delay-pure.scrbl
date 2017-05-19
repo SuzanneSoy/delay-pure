@@ -105,17 +105,40 @@
 
 @deftogether[
  [@defform*[#:literals (:)
-            [(define-pure/stateless (name . args) body ...)
-             (define-pure/stateless (name . args) : result-type body ...)]]
+            [(define-pure/stateless (name . args) maybe-result body ...)
+             (define-pure/stateless
+               (: name . type)
+               (define (name . args) maybe-result body ...))]]
   @defform*[#:literals (:)
-            [(define-pure/stateful  (name . args) body ...)
-             (define-pure/stateful  (name . args) : result-type body ...)]]]]{
+            [(define-pure/stateful (name . args) maybe-result body ...)
+             (define-pure/stateful
+               (: name . type)
+               (define (name . args) maybe-result body ...))]
+            #:grammar
+            [(maybe-result (code:line)
+                           (code:line : result-type))]]]]{
                                                                           
  Defines @racket[name] as a pure function. The @racket[define-pure/stateful]
  form relies on @racket[pure/stateful], and therefore allows the function to
  return a value containing @tech{stateful} functions. On the other hand,
  @racket[define-pure/stateless] relies on @racket[pure/stateless], and
- therefore only allows the return value to contain @tech{stateless} functions.}
+ therefore only allows the return value to contain @tech{stateless} functions.
+
+ Due to the way the function is defined, a regular separate type annotation of
+ the form @racket[(: name type)] would not work (the function is first defined
+ using a temporary variable, and @racket[name] is merely a
+ @tech["rename transformer"
+       #:doc '(lib "scribblings/reference/reference.scrbl")] for that temporary
+ variable).
+
+ It is therefore possible to express such a type annotation by placing both
+ the type annotation and the definition within a @racket[define-pure/stateless]
+ or @racket[define-pure/stateful] form:
+
+ @racketblock[
+ (define-pure/stateless
+   (: square : (→ Number Number))
+   (define (square x) (* x x)))]}
 
 @(define-syntax (show-pure-ids stx)
    (with-syntax ([(id ...) (map (λ (id) (datum->syntax #'here (syntax-e id)))

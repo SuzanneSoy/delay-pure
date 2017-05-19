@@ -16,16 +16,17 @@
   (define f0
     (let ([x (vector-immutable 'a 'b 'c)])
       (let ()
-        (: f (→ Integer
-                (Listof Integer)
-                (Rec R (List* Integer Symbol (Promise R)))))
-        (define-pure/stateless (f [n : Integer] [big : (Listof Integer)])
-          : (Rec R (List* Integer Symbol (Promise R)))
-          (cons (length big)
-                (cons (vector-ref x (modulo n 3))
-                      (delay/pure/stateless (f (add1 n)
-                                               (reverse (cons (length big)
-                                                              big)))))))
+        (define-pure/stateless
+          (: f (→ Integer
+                  (Listof Integer)
+                  (Rec R (List* Integer Symbol (Promise R)))))
+          (define (f [n : Integer] [big : (Listof Integer)])
+            : (Rec R (List* Integer Symbol (Promise R)))
+            (cons (length big)
+                  (cons (vector-ref x (modulo n 3))
+                        (delay/pure/stateless (f (add1 n)
+                                                 (reverse (cons (length big)
+                                                                big))))))))
         (f 0 '()))))
 
   ;; Check that the first 100 elements are as expected:

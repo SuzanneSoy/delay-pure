@@ -122,7 +122,8 @@
        (begin
          (free-id-set-add! unsafe-pure-functions-free-id-set/stateless #'fn)
          #'(set-box! rw-unsafe-pure-functions-set/stateless
-                     (set-add fn)))]))
+                     (set-add (unbox rw-unsafe-pure-functions-set/stateless)
+                              fn)))]))
   (define-for-syntax (unsafe-pure-function?/stateless id)
     (free-id-set-member? unsafe-pure-functions-free-id-set/stateless id)))
 
@@ -140,7 +141,8 @@
        (begin
          (free-id-set-add! unsafe-allowed-functions-free-id-set/stateful #'fn)
          #'(set-box! rw-unsafe-allowed-functions-set/stateful
-                     (set-add fn)))]))
+                     (set-add (unbox rw-unsafe-allowed-functions-set/stateful)
+                              fn)))]))
   (define-for-syntax (unsafe-allowed-function?/stateful id)
     (free-id-set-member? unsafe-allowed-functions-free-id-set/stateful id)))
 
@@ -199,6 +201,8 @@
           declared-stateless-pure-function?) x)  #t]
     [(set-member? built-in-pure-functions-set x) #t]
     [(set-member? (unsafe-pure-functions-set/stateless) x) #t]
+    [(and (eq? stateful/stateless 'stateful)
+          (set-member? (unsafe-allowed-functions-set/stateful) x)) #t]
     ;; delay/pure is only used in a safe way, unless the user requires
     ;; private files
     [(eq? x make-promise/pure/stateful)          #t]
@@ -228,9 +232,9 @@
 (define ((immutable/stateless/c varref) x)
   (check-immutable! x varref 'stateless void void))
 
-(define-for-syntax (make-no-set!-transformer id)
+(define-for-syntax (make-no-set!-transformer id [wrapper #f])
   (λ (stx)
-    (syntax-case stx (set!)
+    (syntax-case stx ()
       [(set-id . rest)
        (free-identifier=? #'set-id #'set!)
        (raise-syntax-error
@@ -240,11 +244,11 @@
                 (syntax-e id))
         stx
         #'set-id)]
-      [self (identifier? #'self) id]
+      [self (identifier? #'self) (if wrapper #`(#,wrapper #,id) id)]
       [(self . args)
        (identifier? #'self)
        (datum->syntax (syntax-local-identifier-as-binding #'self)
-                      `(,id . ,#'args))])))
+                      `(,(if wrapper #`(#,wrapper #,id) id) . ,#'args))])))
 
 (begin-for-syntax
   (define/contract (pure-impl self fn-stx check-result? stateful/stateless-sym)
@@ -366,30 +370,57 @@
     [(self fn #:check-result) (pure-impl #'self #'fn 'check-result 'stateless)])
   )
 
-(define-for-syntax (define-pure/impl stateful/stateless-sym)
-  (syntax-parser
-    [(self {~optional {~seq {~and fa #:∀} tvars}}
-           (name . args)
-           (~optional (~seq C:colon result-type))
-           body …)
-     #:with lam (if (free-identifier=? (datum->syntax #'self 'λ) #'te:λ)
-                    #'te:λ
-                    #'λ)
-     #:with (maybe-result-type …) (if (attribute result-type)
-                                      #'(C result-type)
-                                      #'())
-     #:with pure/? (if (eq? stateful/stateless-sym 'stateful)
-                       #'pure/stateful
-                       #'pure/stateless)
-     #:with declared-wrapper (if (eq? stateful/stateless-sym 'stateful)
-                                 #'declared-stateful-pure-function
-                                 #'declared-stateless-pure-function)
-     (quasisyntax/top-loc this-syntax
-       (define name
-         (declared-wrapper
-          (pure/?
-           (lam #,@(when-attr tvars #'(fa tvars)) args maybe-result-type …
-                (let () body …))))))]))
+(begin-for-syntax
+  (define-syntax-class (maybe-free-id=? other)
+    #:attributes ()
+    (pattern self:id #:when (or (not other)
+                                (free-identifier=? #'self other))))
+
+  (define-syntax-class (name+args+body [other-name #f])
+    (pattern ({~and {~optional {~seq #:∀ tvars}} {~seq fa …}}
+              ({~var name (maybe-free-id=? other-name)} . args)
+              . rest)))
+  (define-syntax-class def
+    (pattern {~and d {~or {~literal define}
+                          {~literal te:define}}}
+             #:do [(record-disappeared-uses* #'d)])))
+
+(define-for-syntax ((define-pure/impl stateful/stateless-sym) stx)
+  (with-disappeared-uses
+   (syntax-parse stx
+     [{~or (self {~and whole-τ (CT:colon name/τ:id . self-τ)}
+                 (:def . {~var || (name+args+body #'name/τ)}))
+           (self . {~and :name+args+body {~not ((:colon . _) . _)}})}
+      #:with lam (if (free-identifier=? (datum->syntax #'self 'λ) #'te:λ)
+                     #'te:λ
+                     #'λ)
+      #:with pure/? (if (eq? stateful/stateless-sym 'stateful)
+                        #'pure/stateful
+                        #'pure/stateless)
+      #:with declared-wrapper (if (eq? stateful/stateless-sym 'stateful)
+                                  #'declared-stateful-pure-function
+                                  #'declared-stateless-pure-function)
+      #:with unsafe-free-id-set
+      (if (eq? stateful/stateless-sym 'stateful)
+          #'unsafe-allowed-functions-free-id-set/stateful
+          #'unsafe-pure-functions-free-id-set/stateless)
+      #:with name-impl ((make-syntax-introducer) #'name)
+      (quasisyntax/top-loc this-syntax
+        (begin
+          #,@(when-attr CT #'{(CT name-impl . self-τ)})
+          ;#,@(when-attr whole-τ #'{whole-τ})
+          (define-syntax name (make-no-set!-transformer #'name-impl))
+          (define name-impl
+            (declared-wrapper
+             (pure/?
+              (lam fa … args . rest))))
+          (define-syntax dummy
+            ;; Must happen after defining name-impl, so that the fresh
+            ;; definition is visible. Due to the way Racket handle intdef-ctx
+            ;; it will first run all the macro definitions, and then expand the
+            ;; contents of name-impl (so when expanding the pure/? code,
+            ;; the free-id-set will already be modified.
+            (free-id-set-add! unsafe-free-id-set #'name-impl))))])))
 
 (define-syntax define-pure/stateful (define-pure/impl 'stateful))
 (define-syntax define-pure/stateless (define-pure/impl 'stateless))
