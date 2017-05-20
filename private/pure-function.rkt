@@ -392,8 +392,8 @@
                  (:def . {~var || (name+args+body #'name/τ)}))
            (self . {~and :name+args+body {~not ((:colon . _) . _)}})}
       #:with lam (if (free-identifier=? (datum->syntax #'self 'λ) #'te:λ)
-                     #'te:λ
-                     #'λ)
+                     (datum->syntax #'here 'te:λ #'name)
+                     (datum->syntax #'here 'λ #'name))
       #:with pure/? (if (eq? stateful/stateless-sym 'stateful)
                         #'pure/stateful
                         #'pure/stateless)
@@ -408,7 +408,7 @@
       (quasisyntax/top-loc this-syntax
         (begin
           #,@(when-attr CT #'{(CT name-impl . self-τ)})
-          ;#,@(when-attr whole-τ #'{whole-τ})
+          ;#,@(when-attr whole-τ #'{whole-τ}) ;; not needed.
           (define-syntax name (make-no-set!-transformer #'name-impl))
           (define name-impl
             (declared-wrapper
