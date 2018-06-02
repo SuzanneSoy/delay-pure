@@ -4,7 +4,6 @@
 
 ;; This file checks that externally mutating a free variable on which a pure
 ;; function or promise depends does not affect the function's result.
-
 (check-equal? (let ([x 1])
                 (define d (delay/pure/stateful (add1 x)))
                 (list (begin (set! x -10) (force d))
@@ -79,3 +78,10 @@
                 (list (begin (set! x -10) (d))
                       (begin (set! x -11) (d))))
               '(2 2))
+
+;; Check that this doesn't cause a run-time error due to the internal use of
+;; unsafe-undefined in the expanded function with optional arguments (starting
+;; from Racket 6.90.0.29)
+(define z 1)
+(define-pure/stateless (d [opt : Number z]) (void))
+(d)
