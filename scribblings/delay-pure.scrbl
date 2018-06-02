@@ -9,6 +9,19 @@
                     racket/promise
                     (only-in type-expander :)]]
 
+@(module te racket/base
+   (provide te:define)
+   (require scribble/manual
+            (for-label type-expander))
+   (define te:define (racket define)))
+@(require 'te)
+@(module tr racket/base
+   (provide tr:define)
+   (require scribble/manual
+            (for-label (only-meta-in 0 typed/racket)))
+   (define tr:define (racket define)))
+@(require 'tr)
+
 @title{Pure functions and promises}
 @author[@author+email["Georges Dupéron" "georges.duperon@gmail.com"]]
 
@@ -104,12 +117,12 @@
  possibly containing @tech{stateful} functions.}
 
 @deftogether[
- [@defform*[#:literals (:)
+ [@defform*[#:literals (: define)
             [(define-pure/stateless (name . args) maybe-result body ...)
              (define-pure/stateless
                (: name . type)
                (define (name . args) maybe-result body ...))]]
-  @defform*[#:literals (:)
+  @defform*[#:literals (: define)
             [(define-pure/stateful (name . args) maybe-result body ...)
              (define-pure/stateful
                (: name . type)
@@ -138,7 +151,11 @@
  @racketblock[
  (define-pure/stateless
    (: square : (→ Number Number))
-   (define (square x) (* x x)))]}
+   (define (square x) (* x x)))]
+
+ The @racket[define] identifier can either be @tr:define from
+ @racketmodname[typed/racket] or @te:define from
+ @racketmodname[type-expander].}
 
 @(define-syntax (show-pure-ids stx)
    (with-syntax ([(id ...) (map (λ (id) (datum->syntax #'here (syntax-e id)))
