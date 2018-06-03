@@ -5,7 +5,8 @@
                "typed-racket-lib"
                "typed-racket-more"
                "type-expander"
-               "phc-toolkit"))
+               "phc-toolkit"
+               "version-case"))
 (define build-deps '("scribble-lib"
                      "racket-doc"
                      "typed-racket-doc"))
