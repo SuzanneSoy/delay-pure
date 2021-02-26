@@ -23,7 +23,7 @@
 @(require 'tr)
 
 @title{Pure functions and promises}
-@author[@author+email["Georges Dupéron" "georges.duperon@gmail.com"]]
+@author[@author+email["Suzanne Soy" "racket@suzanne.soy"]]
 
 @defmodule[delay-pure]
 
