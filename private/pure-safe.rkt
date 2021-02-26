@@ -11,7 +11,8 @@
          (for-syntax version-case
                      racket/base
                      syntax/parse
-                     phc-toolkit/untyped))
+                     phc-toolkit/untyped)
+         (for-meta 2 racket/base))
 
 (unsafe-require/typed
  "pure-unsafe.rkt"
