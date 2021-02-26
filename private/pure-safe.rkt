@@ -21,7 +21,7 @@
   (if (syntax? x) (syntax-e x) x))
 
 (define-syntax (delay/pure/stateless/unsafe stx)
-  (make-delayer stx #'make-promise/pure/stateless '()))
+  (delayer (#'make-promise/pure/stateless '()) stx))
   
 (define-syntax delay/pure/stateful
   (syntax-parser
