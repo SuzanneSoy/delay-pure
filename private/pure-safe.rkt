@@ -8,7 +8,8 @@
 (require typed/racket/unsafe
          "pure-function.rkt"
          racket/private/promise
-         (for-syntax racket/base
+         (for-syntax version-case
+                     racket/base
                      syntax/parse
                      phc-toolkit/untyped))
 
@@ -21,7 +22,11 @@
   (if (syntax? x) (syntax-e x) x))
 
 (define-syntax (delay/pure/stateless/unsafe stx)
-  (delayer (#'make-promise/pure/stateless '()) stx))
+  (version-case
+   [(version< (version) "7.4")
+    (make-delayer stx #'make-promise/pure/stateless '())]
+   [else
+    (delayer (#'make-promise/pure/stateless '()) stx)]))
   
 (define-syntax delay/pure/stateful
   (syntax-parser
