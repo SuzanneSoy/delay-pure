@@ -32,7 +32,7 @@ env:
     - RACKET_VERSION=HEAD
 
 before_install:
-- curl -L https://raw.githubusercontent.com/greghendershott/travis-racket/master/install-racket.sh | bash
+#- curl -L https://raw.githubusercontent.com/greghendershott/travis-racket/master/install-racket.sh | bash
 - curl -L https://raw.githubusercontent.com/jsmaniac/travis-racket/patch-1/install-racket.sh | bash
 - raco pkg install --deps search-auto doc-coverage cover cover-codecov # or cover-coveralls
 
