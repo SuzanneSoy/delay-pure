@@ -16,4 +16,4 @@
                  " Should be sound for occurrence typing (unlike"
                  " delay/name) because only pure functions are allowed."))
 (define version "1.0")
-(define pkg-authors '("Suzanne Soy"))
+(define pkg-authors '(|Suzanne Soy|))
