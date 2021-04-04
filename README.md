@@ -1,5 +1,5 @@
-[![Build Status,](https://img.shields.io/travis/jsmaniac/delay-pure/master.svg)](https://travis-ci.org/jsmaniac/delay-pure)
-[![Coverage Status,](https://img.shields.io/codecov/c/github/jsmaniac/delay-pure/master.svg)](https://codecov.io/gh/jsmaniac/delay-pure)
+[![Build Status,](https://img.shields.io/travis/jsmaniac/delay-pure/main.svg)](https://travis-ci.org/jsmaniac/delay-pure)
+[![Coverage Status,](https://img.shields.io/codecov/c/github/jsmaniac/delay-pure/main.svg)](https://codecov.io/gh/jsmaniac/delay-pure)
 [![Build Stats,](https://img.shields.io/badge/build-stats-blue.svg)](http://jsmaniac.github.io/travis-stats/#jsmaniac/delay-pure)
 [![Online Documentation.](https://img.shields.io/badge/docs-online-blue.svg)](http://docs.racket-lang.org/delay-pure/)
 [![Maintained as of 2018,](https://img.shields.io/maintenance/yes/2018.svg)](https://github.com/jsmaniac/delay-pure/issues)
