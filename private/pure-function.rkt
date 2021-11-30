@@ -30,8 +30,8 @@
 
 (unsafe-require/typed
  "pure-unsafe.rkt"
- [promise/pure/maybe-stateful? (→ Any Boolean : Promise)]
- [promise/pure/stateless? (→ Any Boolean : Promise)]
+ [promise/pure/maybe-stateful? (→ Any Boolean : (Promise Any))]
+ [promise/pure/stateless? (→ Any Boolean : (Promise Any))]
  [make-promise/pure/stateful (∀ (a) (→ (→ a) (Promise a)))]
  [make-promise/pure/stateless (∀ (a) (→ (→ a) (Promise a)))]
  [declared-stateful-pure-function? (→ Any Boolean)]
